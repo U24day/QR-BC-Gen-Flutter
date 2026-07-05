@@ -64,10 +64,10 @@ class _SplashState extends State<SplashScreen>
                 Container(
                   width: 110, height: 110,
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.12),
+                    color: Colors.white.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(28),
                     border: Border.all(
-                        color: Colors.white.withOpacity(0.3), width: 1.5),
+                        color: Colors.white.withValues(alpha: 0.3), width: 1.5),
                   ),
                   child: const Icon(Icons.qr_code_2_rounded,
                       size: 68, color: Colors.white),
@@ -84,7 +84,7 @@ class _SplashState extends State<SplashScreen>
                 const SizedBox(height: 8),
                 Text('Generate · Scan · Share',
                     style: TextStyle(
-                        color: Colors.white.withOpacity(0.7),
+                        color: Colors.white.withValues(alpha: 0.7),
                         fontSize: 15, letterSpacing: 1.5)),
                 const SizedBox(height: 60),
                 SizedBox(
@@ -92,7 +92,7 @@ class _SplashState extends State<SplashScreen>
                   child: CircularProgressIndicator(
                     strokeWidth: 2.5,
                     valueColor: AlwaysStoppedAnimation(
-                        Colors.white.withOpacity(0.6)),
+                        Colors.white.withValues(alpha: 0.6)),
                   ),
                 ),
               ]),

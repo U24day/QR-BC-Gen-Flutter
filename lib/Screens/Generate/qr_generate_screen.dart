@@ -88,8 +88,10 @@ class _QrGenState extends State<QrGenerateScreen> {
       isGenerated: true,
     );
     await historyService.add(item);
-    if (mounted) ScaffoldMessenger.of(context)
-        .showSnackBar(const SnackBar(content: Text('Saved to history')));
+    if (mounted) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Saved to history')));
+    }
   }
 
   InputDecoration _dec(String hint) => InputDecoration(
@@ -118,7 +120,7 @@ class _QrGenState extends State<QrGenerateScreen> {
               decoration: _dec('Password'), obscureText: true),
           const SizedBox(height: 8),
           DropdownButtonFormField<String>(
-            value: _wifiEnc, decoration: _dec('Encryption'),
+            initialValue: _wifiEnc, decoration: _dec('Encryption'),
             items: ['WPA', 'WEP', 'nopass'].map((e) =>
                 DropdownMenuItem(value: e, child: Text(e))).toList(),
             onChanged: (v) => setState(() => _wifiEnc = v!),

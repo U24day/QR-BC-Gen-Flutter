@@ -80,7 +80,7 @@ class _ScanState extends State<ScanScreen> with WidgetsBindingObserver {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             decoration: BoxDecoration(
-                color: const Color(0xFF1A3C6E).withOpacity(0.1),
+                color: const Color(0xFF1A3C6E).withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(20)),
             child: Text(format,
                 style: const TextStyle(fontSize: 12,
@@ -115,6 +115,7 @@ class _ScanState extends State<ScanScreen> with WidgetsBindingObserver {
                   if (items.isNotEmpty) {
                     await historyService.toggleFavorite(items.first);
                   }
+                  if (!mounted) return;
                   Navigator.pop(context);
                 }),
           ]),
@@ -265,7 +266,7 @@ class _ResultAction extends StatelessWidget {
       Container(
         width: 52, height: 52,
         decoration: BoxDecoration(
-            color: const Color(0xFF1A3C6E).withOpacity(0.1),
+            color: const Color(0xFF1A3C6E).withValues(alpha: 0.1),
             shape: BoxShape.circle),
         child: Icon(icon, color: const Color(0xFF1A3C6E), size: 24),
       ),

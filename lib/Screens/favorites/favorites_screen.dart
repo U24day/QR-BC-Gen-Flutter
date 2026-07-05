@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../models/code_item.dart';
 import '../../main.dart';
 
 class FavoritesScreen extends StatefulWidget {
@@ -54,7 +53,7 @@ class _FavState extends State<FavoritesScreen> {
                 leading: Container(
                   width: 42, height: 42,
                   decoration: BoxDecoration(
-                      color: const Color(0xFF1A3C6E).withOpacity(0.1),
+                      color: const Color(0xFF1A3C6E).withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(10)),
                   child: Icon(
                       item.type == 'qr'

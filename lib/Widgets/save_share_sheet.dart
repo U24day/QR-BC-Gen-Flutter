@@ -31,9 +31,11 @@ class SaveShareSheet extends StatelessWidget {
           onTap: () async {
             try {
               await Gal.requestAccess();
+              if (!ctx.mounted) return;
               ScaffoldMessenger.of(ctx).showSnackBar(
                   const SnackBar(content: Text('Saved to gallery')));
             } catch (e) {
+              if (!ctx.mounted) return;
               ScaffoldMessenger.of(ctx).showSnackBar(
                   SnackBar(content: Text('Error: $e')));
             }
@@ -76,10 +78,10 @@ class _ActionBtn extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-          color: const Color(0xFF1A3C6E).withOpacity(0.08),
+          color: const Color(0xFF1A3C6E).withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
-              color: const Color(0xFF1A3C6E).withOpacity(0.2)),
+              color: const Color(0xFF1A3C6E).withValues(alpha: 0.2)),
         ),
         child: Row(mainAxisSize: MainAxisSize.min, children: [
           Icon(icon, size: 18, color: const Color(0xFF1A3C6E)),

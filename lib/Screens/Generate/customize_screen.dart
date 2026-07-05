@@ -60,7 +60,13 @@ class _CustomizeState extends State<CustomizeScreen> {
                 foregroundColor: Colors.white),
             child: const Text('Apply'),
             onPressed: () {
-              setState(() { if (fg) _fg = tmp; else _bg = tmp; });
+              setState(() {
+                if (fg) {
+                  _fg = tmp;
+                } else {
+                  _bg = tmp;
+                }
+              });
               Navigator.pop(context);
             },
           ),
@@ -84,7 +90,7 @@ class _CustomizeState extends State<CustomizeScreen> {
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [BoxShadow(
-                      color: Colors.black.withOpacity(0.08),
+                      color: Colors.black.withValues(alpha: 0.08),
                       blurRadius: 12, offset: const Offset(0, 4))]),
               child: QrImageView(
                 data: 'https://example.com',

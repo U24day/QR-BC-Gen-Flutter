@@ -20,22 +20,22 @@ class _BarcodeGenState extends State<BarcodeGenerateScreen> {
   static const _types = [
     (BarcodeType.Code128,    'Code 128',    'Alphanumeric, any length'),
     (BarcodeType.Code39,     'Code 39',     'Uppercase + digits'),
-    (BarcodeType.Ean13,      'EAN-13',      '13 digits'),
-    (BarcodeType.Ean8,       'EAN-8',       '8 digits'),
-    (BarcodeType.UpcA,       'UPC-A',       '12 digits'),
-    (BarcodeType.UpcE,       'UPC-E',       '8 digits'),
-    (BarcodeType.Itf14,      'ITF-14',      'Even number of digits'),
+    (BarcodeType.CodeEAN13,  'EAN-13',      '13 digits'),
+    (BarcodeType.CodeEAN8,   'EAN-8',       '8 digits'),
+    (BarcodeType.CodeUPCA,   'UPC-A',       '12 digits'),
+    (BarcodeType.CodeUPCE,   'UPC-E',       '8 digits'),
+    (BarcodeType.CodeITF14,  'ITF-14',      'Even number of digits'),
     (BarcodeType.PDF417,     'PDF417',      '2D stacked barcode'),
     (BarcodeType.DataMatrix, 'Data Matrix', '2D compact square'),
     (BarcodeType.Aztec,      'Aztec',       '2D concentric rings'),
   ];
 
   bool get _isNumeric =>
-      _barcodeType == BarcodeType.Ean13 ||
-          _barcodeType == BarcodeType.Ean8  ||
-          _barcodeType == BarcodeType.UpcA  ||
-          _barcodeType == BarcodeType.UpcE  ||
-          _barcodeType == BarcodeType.Itf14;
+      _barcodeType == BarcodeType.CodeEAN13 ||
+          _barcodeType == BarcodeType.CodeEAN8  ||
+          _barcodeType == BarcodeType.CodeUPCA  ||
+          _barcodeType == BarcodeType.CodeUPCE  ||
+          _barcodeType == BarcodeType.CodeITF14;
 
   Future<void> _save() async {
     if (_data.isEmpty) return;
@@ -62,22 +62,26 @@ class _BarcodeGenState extends State<BarcodeGenerateScreen> {
         children: [
           // Barcode type list
           Card(
-            child: Column(
-              children: _types.map((t) => RadioListTile<BarcodeType>(
-                value: t.$1,
-                groupValue: _barcodeType,
-                title: Text(t.$2, style: const TextStyle(
-                    fontWeight: FontWeight.w500, fontSize: 14)),
-                subtitle: Text(t.$3,
-                    style: const TextStyle(fontSize: 12, color: Colors.grey)),
-                activeColor: const Color(0xFF1A3C6E),
-                dense: true,
-                onChanged: (v) => setState(() {
-                  _barcodeType = v!;
+            child: RadioGroup<BarcodeType>(
+              groupValue: _barcodeType,
+              onChanged: (v) => setState(() {
+                if (v != null) {
+                  _barcodeType = v;
                   _data = '';
                   _ctrl.clear();
-                }),
-              )).toList(),
+                }
+              }),
+              child: Column(
+                children: _types.map((t) => RadioListTile<BarcodeType>(
+                  value: t.$1,
+                  title: Text(t.$2, style: const TextStyle(
+                      fontWeight: FontWeight.w500, fontSize: 14)),
+                  subtitle: Text(t.$3,
+                      style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                  activeColor: const Color(0xFF1A3C6E),
+                  dense: true,
+                )).toList(),
+              ),
             ),
           ),
           const SizedBox(height: 14),

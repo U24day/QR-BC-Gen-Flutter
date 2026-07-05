@@ -38,7 +38,7 @@ class _HomeState extends State<HomeScreen> {
         selectedIndex: _idx,
         onDestinationSelected: (i) => setState(() => _idx = i),
         backgroundColor: Colors.white,
-        indicatorColor: const Color(0xFF1A3C6E).withOpacity(0.12),
+        indicatorColor: const Color(0xFF1A3C6E).withValues(alpha: 0.12),
         destinations: const [
           NavigationDestination(
               icon: Icon(Icons.home_outlined),
