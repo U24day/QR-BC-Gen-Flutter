@@ -14,12 +14,12 @@ class HomeScreen extends StatefulWidget {
 class _HomeState extends State<HomeScreen> {
   int _idx = 0;
 
-  final _pages = const [
-    DashboardScreen(),
-    GenerateScreen(),
-    ScanScreen(),
-    HistoryScreen(),
-    FavoritesScreen(),
+  List<Widget> get _pages => [
+    DashboardScreen(onNavigate: (i) => setState(() => _idx = i)),
+    const GenerateScreen(),
+    const ScanScreen(),
+    const HistoryScreen(),
+    const FavoritesScreen(),
   ];
 
   @override
