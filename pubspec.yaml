@@ -30,6 +30,7 @@ dependencies:
   # Utilities
   uuid: ^4.2.1                    # Generate unique IDs
   permission_handler: ^11.1.0     # Camera & storage permissions
+  super_clipboard: ^0.8.6         # Copy image to clipboard (Android + iOS)
 
 dev_dependencies:
   flutter_test:

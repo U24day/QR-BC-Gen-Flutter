@@ -9,6 +9,7 @@ import 'package:flutter/widgets.dart';
 import 'package:gal/gal.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:super_clipboard/super_clipboard.dart';
 
 /// Result returned by [ImageService] operations.
 class ImageResult {
@@ -104,6 +105,50 @@ class ImageService {
     final file = File('${dir.path}/$fileName');
     await file.writeAsBytes(bytes, flush: true);
     return file;
+  }
+
+  // ── Copy Image to Clipboard ───────────────────────────────────────────────
+
+  /// Captures the widget at [key] and copies it as a PNG image
+  /// to the system clipboard. Works on Android (API 24+) and iOS.
+  static Future<ImageResult> copyImageToClipboard(
+    GlobalKey key, {
+    double pixelRatio = 4.0,
+  }) async {
+    // 1. Capture
+    final bytes = await captureFromKey(key, pixelRatio: pixelRatio);
+    if (bytes == null) {
+      return const ImageResult(
+        success: false,
+        message: '❌ Image capture failed. Please try again.',
+      );
+    }
+
+    // 2. Check if clipboard supports image writing.
+    final clipboard = SystemClipboard.instance;
+    if (clipboard == null) {
+      return const ImageResult(
+        success: false,
+        message: '❌ Clipboard not available on this device.',
+      );
+    }
+
+    // 3. Write PNG bytes to clipboard.
+    try {
+      final item = DataWriterItem();
+      item.add(Formats.png(bytes));
+      await clipboard.write([item]);
+      return const ImageResult(
+        success: true,
+        message: '✅ QR image copied to clipboard!',
+      );
+    } catch (e) {
+      debugPrint('[ImageService] clipboard copy error: $e');
+      return ImageResult(
+        success: false,
+        message: '❌ Copy failed: $e',
+      );
+    }
   }
 
   // ── Save to Gallery ───────────────────────────────────────────────────────

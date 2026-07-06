@@ -5,11 +5,11 @@ import '../services/image_service.dart';
 /// A row of action buttons shown below a generated QR code or barcode.
 ///
 /// Pass the [repaintKey] of the [RepaintBoundary] wrapping the code widget
-/// so that [Gallery] and [Share] buttons can capture the actual image.
+/// so that Gallery, Share, and Copy Image buttons can capture the actual image.
 ///
-/// [onSaveHistory] is called to persist the item to Hive history.
-/// [prefix] controls the saved file name prefix ("QR" or "Barcode").
-/// [data] is used only for the Copy action.
+/// [onSaveHistory] — saves item to Hive history.
+/// [prefix] — file name prefix ("QR" or "Barcode").
+/// [data] — used only for the "Copy Text" action.
 class SaveShareSheet extends StatefulWidget {
   final String data;
   final GlobalKey repaintKey;
@@ -29,8 +29,9 @@ class SaveShareSheet extends StatefulWidget {
 }
 
 class _SaveShareSheetState extends State<SaveShareSheet> {
-  bool _savingGallery = false;
-  bool _sharing = false;
+  bool _savingGallery  = false;
+  bool _sharing        = false;
+  bool _copyingImage   = false;
 
   // ── Helpers ───────────────────────────────────────────────────────────────
 
@@ -42,6 +43,7 @@ class _SaveShareSheetState extends State<SaveShareSheet> {
         content: Text(msg),
         backgroundColor: isError ? Colors.red.shade700 : null,
         behavior: SnackBarBehavior.floating,
+        duration: Duration(seconds: isError ? 4 : 2),
         margin: const EdgeInsets.fromLTRB(12, 0, 12, 16),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
@@ -50,33 +52,31 @@ class _SaveShareSheetState extends State<SaveShareSheet> {
 
   // ── Actions ───────────────────────────────────────────────────────────────
 
-  Future<void> _saveToHistory() async {
-    widget.onSaveHistory();
-    // onSaveHistory shows its own snack in the parent screens.
-  }
+  /// Save item to Hive history.
+  void _saveToHistory() => widget.onSaveHistory();
 
+  /// Save QR/Barcode as PNG to device gallery.
   Future<void> _saveToGallery() async {
     if (_savingGallery) return;
     setState(() => _savingGallery = true);
-
     try {
       final result = await ImageService.saveToGallery(
         widget.repaintKey,
         prefix: widget.prefix,
-        pixelRatio: 4.0, // 4× → ≥512 px for a 128-px widget
+        pixelRatio: 4.0,
       );
       _showSnack(result.message, isError: !result.success);
     } catch (e) {
-      _showSnack('Gallery save error: $e', isError: true);
+      _showSnack('❌ Gallery save error: $e', isError: true);
     } finally {
       if (mounted) setState(() => _savingGallery = false);
     }
   }
 
+  /// Open native share sheet with actual image file.
   Future<void> _share() async {
     if (_sharing) return;
     setState(() => _sharing = true);
-
     try {
       final result = await ImageService.shareImage(
         widget.repaintKey,
@@ -87,15 +87,33 @@ class _SaveShareSheetState extends State<SaveShareSheet> {
         _showSnack(result.message, isError: true);
       }
     } catch (e) {
-      _showSnack('Share error: $e', isError: true);
+      _showSnack('❌ Share error: $e', isError: true);
     } finally {
       if (mounted) setState(() => _sharing = false);
     }
   }
 
-  void _copy() {
+  /// Copy QR/Barcode image (PNG) to system clipboard.
+  Future<void> _copyImage() async {
+    if (_copyingImage) return;
+    setState(() => _copyingImage = true);
+    try {
+      final result = await ImageService.copyImageToClipboard(
+        widget.repaintKey,
+        pixelRatio: 4.0,
+      );
+      _showSnack(result.message, isError: !result.success);
+    } catch (e) {
+      _showSnack('❌ Copy image error: $e', isError: true);
+    } finally {
+      if (mounted) setState(() => _copyingImage = false);
+    }
+  }
+
+  /// Copy the underlying data text (URL/message) to clipboard.
+  void _copyText() {
     Clipboard.setData(ClipboardData(text: widget.data));
-    _showSnack('Copied to clipboard');
+    _showSnack('📋 Text copied to clipboard');
   }
 
   // ── Build ─────────────────────────────────────────────────────────────────
@@ -114,7 +132,7 @@ class _SaveShareSheetState extends State<SaveShareSheet> {
           onTap: _saveToHistory,
         ),
 
-        // Save to Gallery
+        // Save to Gallery (PNG file)
         _ActionBtn(
           icon: Icons.download_rounded,
           label: 'Gallery',
@@ -122,7 +140,7 @@ class _SaveShareSheetState extends State<SaveShareSheet> {
           onTap: _saveToGallery,
         ),
 
-        // Share image
+        // Share image via native share sheet
         _ActionBtn(
           icon: Icons.share_rounded,
           label: 'Share',
@@ -130,11 +148,19 @@ class _SaveShareSheetState extends State<SaveShareSheet> {
           onTap: _share,
         ),
 
-        // Copy text
+        // Copy image to clipboard
+        _ActionBtn(
+          icon: Icons.image_outlined,
+          label: 'Copy Image',
+          isLoading: _copyingImage,
+          onTap: _copyImage,
+        ),
+
+        // Copy text/URL to clipboard
         _ActionBtn(
           icon: Icons.copy_rounded,
-          label: 'Copy',
-          onTap: _copy,
+          label: 'Copy Text',
+          onTap: _copyText,
         ),
       ],
     );
