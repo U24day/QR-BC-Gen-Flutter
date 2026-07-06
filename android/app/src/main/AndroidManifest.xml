@@ -41,6 +41,19 @@
                 android:resource="@xml/file_paths" />
         </provider>
 
+        <!--
+            ClipboardContentProvider: REQUIRED by super_clipboard package for
+            image copy/paste to work on Android. It serves clipboard image data
+            to receiving apps (WhatsApp, Gmail, Photos, etc.) via a content URI.
+            Without this, "Copy Image" silently succeeds but paste produces nothing.
+        -->
+        <provider
+            android:name="com.superlist.clipboard.ClipboardContentProvider"
+            android:authorities="${applicationId}.ClipboardContentProvider"
+            android:exported="true"
+            android:grantUriPermissions="true">
+        </provider>
+
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data
