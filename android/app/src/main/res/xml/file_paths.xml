@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    FileProvider paths configuration.
+
+    Allows share_plus to serve temp image files (PNG) from the app's
+    cache/temp directory via a content:// URI instead of a file:// URI,
+    avoiding FileUriExposedException on Android 7+ (API 24+).
+
+    The path "." exposes the entire directory — that is intentional
+    because path_provider returns sub-paths inside cache/files, and we
+    want to cover all of them without hard-coding sub-folder names.
+-->
+<paths>
+    <!-- getTemporaryDirectory() on Android → getCacheDir() -->
+    <cache-path name="temp_images" path="." />
+
+    <!-- getApplicationDocumentsDirectory() → getFilesDir() -->
+    <files-path name="app_files" path="." />
+
+    <!-- getExternalStorageDirectory() — used on some older Androids -->
+    <external-path name="external_files" path="." />
+
+    <!-- getExternalCacheDir() -->
+    <external-cache-path name="external_cache" path="." />
+</paths>

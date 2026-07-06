@@ -12,32 +12,100 @@ class BarcodeGenerateScreen extends StatefulWidget {
 
 class _BarcodeGenState extends State<BarcodeGenerateScreen> {
   final _ctrl = TextEditingController();
+
+  // RepaintBoundary key — used by SaveShareSheet to capture the barcode image.
+  final GlobalKey _barcodeKey = GlobalKey();
+
   String _data = '';
   BarcodeType _barcodeType = BarcodeType.Code128;
-  final Color _fg = Colors.black;
-  final Color _bg = Colors.white;
+  String? _validationError;
 
   static const _types = [
     (BarcodeType.Code128,    'Code 128',    'Alphanumeric, any length'),
     (BarcodeType.Code39,     'Code 39',     'Uppercase + digits'),
-    (BarcodeType.CodeEAN13,  'EAN-13',      '13 digits'),
-    (BarcodeType.CodeEAN8,   'EAN-8',       '8 digits'),
-    (BarcodeType.CodeUPCA,   'UPC-A',       '12 digits'),
-    (BarcodeType.CodeUPCE,   'UPC-E',       '8 digits'),
+    (BarcodeType.CodeEAN13,  'EAN-13',      'Exactly 12 digits (check digit auto)'),
+    (BarcodeType.CodeEAN8,   'EAN-8',       'Exactly 7 digits (check digit auto)'),
+    (BarcodeType.CodeUPCA,   'UPC-A',       '11 digits (check digit auto)'),
+    (BarcodeType.CodeUPCE,   'UPC-E',       '7 digits (check digit auto)'),
     (BarcodeType.CodeITF14,  'ITF-14',      'Even number of digits'),
     (BarcodeType.PDF417,     'PDF417',      '2D stacked barcode'),
     (BarcodeType.DataMatrix, 'Data Matrix', '2D compact square'),
     (BarcodeType.Aztec,      'Aztec',       '2D concentric rings'),
   ];
 
+  // Whether this type accepts only digits.
   bool get _isNumeric =>
       _barcodeType == BarcodeType.CodeEAN13 ||
-          _barcodeType == BarcodeType.CodeEAN8  ||
-          _barcodeType == BarcodeType.CodeUPCA  ||
-          _barcodeType == BarcodeType.CodeUPCE  ||
-          _barcodeType == BarcodeType.CodeITF14;
+      _barcodeType == BarcodeType.CodeEAN8  ||
+      _barcodeType == BarcodeType.CodeUPCA  ||
+      _barcodeType == BarcodeType.CodeUPCE  ||
+      _barcodeType == BarcodeType.CodeITF14;
 
-  Future<void> _save() async {
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  // ── Validation ──────────────────────────────────────────────────────────
+
+  String? _validate(String input) {
+    if (input.isEmpty) return 'Please enter data for the barcode.';
+
+    switch (_barcodeType) {
+      case BarcodeType.CodeEAN13:
+        if (!RegExp(r'^\d{12}$').hasMatch(input)) {
+          return 'EAN-13 requires exactly 12 digits (check digit is added automatically).';
+        }
+      case BarcodeType.CodeEAN8:
+        if (!RegExp(r'^\d{7}$').hasMatch(input)) {
+          return 'EAN-8 requires exactly 7 digits (check digit is added automatically).';
+        }
+      case BarcodeType.CodeUPCA:
+        if (!RegExp(r'^\d{11}$').hasMatch(input)) {
+          return 'UPC-A requires exactly 11 digits (check digit is added automatically).';
+        }
+      case BarcodeType.CodeUPCE:
+        if (!RegExp(r'^\d{7}$').hasMatch(input)) {
+          return 'UPC-E requires exactly 7 digits (check digit is added automatically).';
+        }
+      case BarcodeType.CodeITF14:
+        if (!RegExp(r'^\d+$').hasMatch(input) || input.length.isOdd) {
+          return 'ITF-14 requires an even number of digits.';
+        }
+      case BarcodeType.Code39:
+        final valid = RegExp(r'^[A-Z0-9 \-\.\$\/\+\%]+$');
+        if (!valid.hasMatch(input.toUpperCase())) {
+          return 'Code 39 supports uppercase letters, digits and: - . \$ / + %';
+        }
+      default:
+        break; // Code128, PDF417, DataMatrix, Aztec accept anything
+    }
+    return null;
+  }
+
+  // ── Generate ─────────────────────────────────────────────────────────────
+
+  void _generate() {
+    FocusScope.of(context).unfocus();
+    final input = _ctrl.text.trim();
+    final error = _validate(input);
+    if (error != null) {
+      setState(() {
+        _validationError = error;
+        _data = '';
+      });
+      return;
+    }
+    setState(() {
+      _validationError = null;
+      _data = input;
+    });
+  }
+
+  // ── Save to Hive history ─────────────────────────────────────────────────
+
+  Future<void> _saveHistory() async {
     if (_data.isEmpty) return;
     final item = CodeItem(
       type: 'barcode',
@@ -48,11 +116,20 @@ class _BarcodeGenState extends State<BarcodeGenerateScreen> {
     );
     await historyService.add(item);
     if (mounted) {
+      ScaffoldMessenger.of(context).clearSnackBars();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Saved to history')),
+        SnackBar(
+          content: const Text('Saved to history ✓'),
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.fromLTRB(12, 0, 12, 16),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
       );
     }
   }
+
+  // ── Build ─────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
@@ -60,22 +137,26 @@ class _BarcodeGenState extends State<BarcodeGenerateScreen> {
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
-          // Barcode type list
+          // ── Barcode type selection ────────────────────────────────────
           Card(
             child: RadioGroup<BarcodeType>(
               groupValue: _barcodeType,
-              onChanged: (v) => setState(() {
+              onChanged: (v) {
                 if (v != null) {
-                  _barcodeType = v;
-                  _data = '';
-                  _ctrl.clear();
+                  setState(() {
+                    _barcodeType = v;
+                    _data = '';
+                    _validationError = null;
+                    _ctrl.clear();
+                  });
                 }
-              }),
+              },
               child: Column(
                 children: _types.map((t) => RadioListTile<BarcodeType>(
                   value: t.$1,
-                  title: Text(t.$2, style: const TextStyle(
-                      fontWeight: FontWeight.w500, fontSize: 14)),
+                  title: Text(t.$2,
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w500, fontSize: 14)),
                   subtitle: Text(t.$3,
                       style: const TextStyle(fontSize: 12, color: Colors.grey)),
                   activeColor: const Color(0xFF1A3C6E),
@@ -86,25 +167,38 @@ class _BarcodeGenState extends State<BarcodeGenerateScreen> {
           ),
           const SizedBox(height: 14),
 
-          // Input
+          // ── Data input ────────────────────────────────────────────────
           TextField(
             controller: _ctrl,
-            keyboardType: _isNumeric ? TextInputType.number : TextInputType.text,
+            keyboardType:
+                _isNumeric ? TextInputType.number : TextInputType.text,
             decoration: InputDecoration(
               hintText: 'Enter data for barcode',
               border: const OutlineInputBorder(),
               prefixIcon: const Icon(Icons.edit),
+              errorText: _validationError,
+              errorMaxLines: 3,
               suffixIcon: IconButton(
                 icon: const Icon(Icons.clear),
                 onPressed: () {
                   _ctrl.clear();
-                  setState(() => _data = '');
+                  setState(() {
+                    _data = '';
+                    _validationError = null;
+                  });
                 },
               ),
             ),
+            onChanged: (_) {
+              // Clear error while user is typing
+              if (_validationError != null) {
+                setState(() => _validationError = null);
+              }
+            },
           ),
           const SizedBox(height: 12),
 
+          // ── Generate button ───────────────────────────────────────────
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
@@ -115,11 +209,11 @@ class _BarcodeGenState extends State<BarcodeGenerateScreen> {
               icon: const Icon(Icons.barcode_reader),
               label: const Text('Generate Barcode',
                   style: TextStyle(fontSize: 15)),
-              onPressed: () => setState(() => _data = _ctrl.text.trim()),
+              onPressed: _generate,
             ),
           ),
 
-          // Preview
+          // ── Barcode Preview ───────────────────────────────────────────
           if (_data.isNotEmpty) ...[
             const SizedBox(height: 20),
             Card(
@@ -127,22 +221,49 @@ class _BarcodeGenState extends State<BarcodeGenerateScreen> {
                 padding: const EdgeInsets.all(16),
                 child: Column(
                   children: [
-                    BarcodeWidget(
-                      barcode: Barcode.fromType(_barcodeType),
-                      data: _data,
-                      width: double.infinity,
-                      height: 120,
-                      color: _fg,
-                      backgroundColor: _bg,
-                      drawText: true,
-                      style: const TextStyle(fontSize: 11),
+                    // RepaintBoundary captures this for image export.
+                    RepaintBoundary(
+                      key: _barcodeKey,
+                      child: Container(
+                        color: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 24),
+                        child: BarcodeWidget(
+                          barcode: Barcode.fromType(_barcodeType),
+                          data: _data,
+                          width: double.infinity,
+                          height: 120,
+                          color: Colors.black,
+                          backgroundColor: Colors.white,
+                          drawText: true,
+                          style: const TextStyle(fontSize: 12),
+                          errorBuilder: (ctx, err) => Padding(
+                            padding: const EdgeInsets.all(8),
+                            child: Text(
+                              'Render error: $err',
+                              style: const TextStyle(
+                                  color: Colors.red, fontSize: 12),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
                     const SizedBox(height: 12),
-                    Text(_data,
-                        style: const TextStyle(fontSize: 12, color: Colors.grey),
-                        textAlign: TextAlign.center),
+                    Text(
+                      _data,
+                      style: const TextStyle(fontSize: 12, color: Colors.grey),
+                      textAlign: TextAlign.center,
+                    ),
                     const SizedBox(height: 12),
-                    SaveShareSheet(data: _data, onSave: _save),
+
+                    // Action buttons
+                    SaveShareSheet(
+                      data: _data,
+                      repaintKey: _barcodeKey,
+                      onSaveHistory: _saveHistory,
+                      prefix: 'Barcode',
+                    ),
                   ],
                 ),
               ),
